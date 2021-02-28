@@ -12,7 +12,7 @@ def get_unique(x):
 
 
 
-def entropy(y, fn_log = np.log2):
+def entropy(y, weight=[], fn_log = np.log2):
     '''
     Calculates entropy
     
@@ -25,16 +25,20 @@ def entropy(y, fn_log = np.log2):
     '''
     
     # get unique values
-    y_unique = list(set(y))
+#     y_unique = list(set(y))
+    y_unique = np.unique(y)
     
     if len(y_unique) < 2:
         return 0
     
+    if len(weight)==0:
+        weight = np.ones(len(y))
+    
     # get total number of values
-    y_total = len(y)
+    y_total = weight.sum()
     
     # compute ratios (p- p+)
-    ratio=[np.sum(y == i) / y_total for i in y_unique]
+    ratio=[np.sum(weight[y == i]) / y_total for i in y_unique]
     
     # compute entropy
     H = np.sum([-p * fn_log(p) for p in ratio])
@@ -87,7 +91,7 @@ def gini_index(y):
 
 
 
-def compute_gain(x, y, fn_gain=entropy, round_values=False):
+def compute_gain(x, y, weight=[], fn_gain=entropy, round_values=False):
     '''
     Calculates the information gain
     
@@ -100,9 +104,12 @@ def compute_gain(x, y, fn_gain=entropy, round_values=False):
     Returns:
     Ht -- list of information gain for each attribute in x
     '''
+    # initialize weight
+    if len(weight)==0:
+        weight = np.ones(len(y))
     
     # get heuristic for all data
-    Hy = fn_gain(y)
+    Hy = fn_gain(y, weight) ########################################################################################################
     
     # initialize to store data
     Ht=[]
@@ -117,7 +124,8 @@ def compute_gain(x, y, fn_gain=entropy, round_values=False):
         x_unique = list(set(xi))
 
         # get total values for x
-        x_total = len(xi)
+#         x_total = len(xi) ########################################################################################################
+        x_total = weight.sum()
 
         # initialize lists to store output
         w=[] # weights
@@ -131,9 +139,15 @@ def compute_gain(x, y, fn_gain=entropy, round_values=False):
 
             # subset y
             y_sub = y[idx]
+            
+            # subset weights
+            weight_sub = weight[idx]
 
-            w.append(len(y_sub) / x_total) # append weight (ratio)
-            h.append(fn_gain(y_sub)) # append entropy
+#             w.append(len(y_sub) / x_total) # append weight (ratio) ########################################################################################################
+            w.append(weight_sub.sum() / x_total) # append weight (ratio)
+
+#             h.append(fn_gain(y_sub)) # append entropy ########################################################################################################
+            h.append(fn_gain(y_sub, weight=weight_sub)) # append entropy
 
         # convert to np arrays
         w = np.array(w)
@@ -185,7 +199,7 @@ class Node(object):
 
         
         
-def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf'), prev_common=None):
+def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf'), prev_common=None, weight=[]):
     '''
     ID3 algorithm used to construct a decision tree through recursion
     
@@ -211,7 +225,8 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
     
     # get all unique values of y and the most common value of y
     y_unique = get_unique(y)
-    y_common = np.bincount(y).argmax()
+    val, cnt = np.unique(y, return_counts=True)
+    y_common = val[cnt.argmax()]
     
     # if all examples have same label return a leaf node with label
     if len(y_unique) < 2:
@@ -221,10 +236,15 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
     elif depth >= max_depth:
         return Node(leaf=True, label=y_common)
     
+    # if there are no more attributes to split on
+    elif len(A) == 0:
+        return Node(leaf=True, label=y_common)
+    
     else:
         # find attribute that best splits X with information gain
         # note X is a subset based on A so idx needs to reference A to get true index (key)
-        idx = compute_gain(X[:, A], y, fn_gain=function).argmax()
+#         print(weight)
+        idx = compute_gain(X[:, A], y, weight=weight, fn_gain=function).argmax() #######################################################################################################
         
         # create a node for best attribute A
         key = A[idx] # best attibute
@@ -249,7 +269,7 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
             
             # call id3 for next data (X_next, y_next, A_next) going one level deeper
             # note the output of id3 is added as a child to the root node created above **
-            root.add_child(id3(X_next, y_next, function=function, A=A_next, Av=Av, depth=depth, max_depth=max_depth, prev_common=y_common))
+            root.add_child(id3(X_next, y_next, function=function, A=A_next, Av=Av, depth=depth, max_depth=max_depth, prev_common=y_common, weight=weight)) ##########################################
             
         return root
 
@@ -375,7 +395,7 @@ class DecisionTree(object):
         self._medians = None
         self._tree = None
         
-    def fit(self, X, y):
+    def fit(self, X, y, weight=[]): #########################################################################################################################################
         
         # copy data into class so original data is not changed
         self._X = X.copy()
@@ -398,7 +418,7 @@ class DecisionTree(object):
                 Av[ai] = sorted(get_unique(self._X[:,ai]))
         
         # fit tree with id3 algorithm
-        self._tree = id3(self._X, self._y, function=self._function, A=A, Av=Av, max_depth=self._maxDepth)
+        self._tree = id3(self._X, self._y, function=self._function, A=A, Av=Av, max_depth=self._maxDepth, weight=weight) ##########################################################################
         
     def predict(self, X, verbose=False):
         
@@ -462,3 +482,50 @@ def dtree_accuracy(X_train, y_train, X_test, y_test, functions, depths):
     results_test['depth']=depths
     
     return results_train, results_test
+
+####################################################################################################################################################
+# random forest
+def get_sub_feature_idx(X, num_idx=[2, 4, 6]):
+    _, M = X.shape
+    idx_choices = np.arange(M)
+    num_feats = np.random.choice(num_idx, size=1)
+    idx_feats = np.random.choice(idx_choices, size=num_feats, replace=False)
+    return idx_feats
+
+class RandomForest(object):
+    
+    def __init__(self, num_trees=10, sizes=[2, 4, 6]):
+        
+        self.num_trees = num_trees
+        self._sizes = sizes
+        
+    def fit(self, X, y):
+        
+        self.sub_idx = [get_sub_feature_idx(X, self._sizes) for i in range(self.num_trees)]
+        
+        self.trees=[]
+        for idx in self.sub_idx:
+            X_sub = X[:, idx].copy()
+            
+            t = DecisionTree()
+            t.fit(X_sub, y)
+            self.trees.append(t)
+            
+    def predict(self, X):
+        
+        # get individual predictions for each tree
+        pred=[]
+        for i, t in enumerate(self.trees):
+            
+            X_sub = X[:, self.sub_idx[i]].copy()
+            pred.append(t.predict(X_sub))
+            
+        pred = np.array(pred).T
+        
+        # vote for true prediction
+        y_pred=[]
+        for i in range(len(pred)):
+            val, cnt = np.unique(pred[i], return_counts=True)
+            y_pred.append(val[cnt.argmax()])
+            
+        return np.array(y_pred)
