@@ -123,37 +123,30 @@ class LinearRegression(object):
                 print('Loss Increasing')
                 break
                 
+            # look at current state
+            pred = get_prediction(X, self.W) # get prediction of X
+            loss = mean_square_loss(y, pred) # get loss of prediction
+            self.loss.append(loss) # store loss
+            
+            # get difference to compare to the tolerance
+            diff = np.abs(loss - prev_loss)
+            prev_loss = loss
+                
             # perform batch learning method
             if self.method=='batch':
-            
-                pred = get_prediction(X, self.W) # get prediction of X
-                loss = mean_square_loss(y, pred) # get loss of prediction
-                self.loss.append(loss) # store loss
+                
                 grad = compute_gradient(X, y, pred) # compute gradient
                 self.W = next_weight(self.W, grad, r) # update weight
                 
-                # get difference to compare to the tolerance
-                diff = np.abs(loss - prev_loss)
-                prev_loss = loss
-                
+            # perform stochastic gradient descent
             elif self.method=='sgd':
                 
                 for i in range(len(X)):
                     Xi = X[i].reshape(1, -1)
-                    pred = get_prediction(X, self.W) # get prediction of X
-                    loss = mean_square_loss(y, pred) # get loss of prediction
-                    self.loss.append(loss) # store loss
-                    grad = compute_gradient(X, y, pred) # compute gradient
+                    yi = y[i]
+                    pred = get_prediction(Xi, self.W) # get prediction of X
+                    grad = compute_gradient(Xi, yi, pred) # compute gradient
                     self.W = next_weight(self.W, grad, r) # update weight
-                    
-                    # get difference to compare to the tolerance
-                    diff = np.abs(loss - prev_loss)
-                    
-                    # check tolerance within for loop to avoid any extra updates
-                    if diff <= self.tol:
-                        break
-                    
-                    prev_loss = loss
                     
             count += 1
             
