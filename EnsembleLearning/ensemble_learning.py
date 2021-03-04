@@ -25,7 +25,6 @@ def entropy(y, weight=[], fn_log = np.log2):
     '''
     
     # get unique values
-#     y_unique = list(set(y))
     y_unique = np.unique(y)
     
     if len(y_unique) < 2:
@@ -59,7 +58,6 @@ def majority_error(y, weight=[]):
     y_unique = list(set(y))
     
     # get total number of values
-#     y_total = len(y)
     y_total = weight.sum()
     
     # compute ratios (p- p+)
@@ -84,11 +82,9 @@ def gini_index(y, weight=[]):
     y_unique = list(set(y))
     
     # get total number of values
-#     y_total = len(y)
     y_total = weight.sum()
     
     # compute ratios (p- p+)
-#     ratio=[np.sum(y == i) / y_total for i in y_unique]
     ratio=[np.sum(weight[y == i]) / y_total for i in y_unique]
     
     # compute Gini index
@@ -100,7 +96,7 @@ def gini_index(y, weight=[]):
 
 
 
-def compute_gain(x, y, weight=[], fn_gain=entropy, round_values=False):
+def compute_gain(x, y, weight=[], fn_gain=entropy):
     '''
     Calculates the information gain
     
@@ -118,7 +114,7 @@ def compute_gain(x, y, weight=[], fn_gain=entropy, round_values=False):
         weight = np.ones(len(y))
     
     # get heuristic for all data
-    Hy = fn_gain(y, weight) ########################################################################################################
+    Hy = fn_gain(y, weight)
     
     # initialize to store data
     Ht=[]
@@ -133,7 +129,6 @@ def compute_gain(x, y, weight=[], fn_gain=entropy, round_values=False):
         x_unique = list(set(xi))
 
         # get total values for x
-#         x_total = len(xi) ########################################################################################################
         x_total = weight.sum()
 
         # initialize lists to store output
@@ -147,15 +142,12 @@ def compute_gain(x, y, weight=[], fn_gain=entropy, round_values=False):
             idx = np.where(xi == val)
 
             # subset y
-            y_sub = y[idx]
+            y_sub = y[idx].copy()
             
             # subset weights
-            weight_sub = weight[idx]
+            weight_sub = weight[idx].copy()
 
-#             w.append(len(y_sub) / x_total) # append weight (ratio) ########################################################################################################
             w.append(weight_sub.sum() / x_total) # append weight (ratio)
-
-#             h.append(fn_gain(y_sub)) # append entropy ########################################################################################################
             h.append(fn_gain(y_sub, weight=weight_sub)) # append entropy
 
         # convert to np arrays
@@ -168,10 +160,6 @@ def compute_gain(x, y, weight=[], fn_gain=entropy, round_values=False):
     # for final output perform subtraction 
     Ht = np.array(Ht)
     Ht = Hy - Ht
-    
-    # round output
-    if round_values == True:
-        Ht = Ht.round(10)
     
     return Ht
 
@@ -251,14 +239,16 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
     
     else:
         
+        # regular id3 not for random forest
         if not sub_size:
             # find attribute that best splits X with information gain
             # note X is a subset based on A so idx needs to reference A to get true index (key)
-            idx = compute_gain(X[:, A], y, weight=weight, fn_gain=function).argmax() ##################################
+            idx = compute_gain(X[:, A], y, weight=weight, fn_gain=function).argmax()
 
             # get key for the current split
             key = A[idx] # best attibute
             
+        # random forest with specified sub_size
         else:
             # ensure valid sub_size
             sub_size = len(A) if len(A) < sub_size else sub_size
@@ -363,29 +353,6 @@ def predict_many(t, tree, verbose=False):
     return np.array(y_pred)
 
 
-
-# def get_medians(X):
-#     '''
-#     Calculates attribute-wise median of numeric data
-    
-#     Input:
-#     X -- data of shape (n, a) where n is number of samples and a is number of attributes
-    
-#     Returns: 
-#     medians -- dictionary of {attribute index: attribute mean} for all numeric attributes
-#     '''
-#     medians={}
-#     for j in range(X.shape[1]):
-#         try:
-#             med = np.median(X[:, j])
-#             medians[j] = med
-#         except:
-#             pass
-        
-#     return medians
-
-
-
 def accuracy(y_pred, y):
     '''
     Calculates accuracy of predictions
@@ -421,7 +388,7 @@ class DecisionTree(object):
         self._tree = None
         self._subSize = subSize
         
-    def fit(self, X, y, weight=[]): #########################################################################################################################################
+    def fit(self, X, y, weight=[]):
         
         # copy data into class so original data is not changed
         self._X = X.copy()
@@ -439,7 +406,7 @@ class DecisionTree(object):
                 Av[ai] = sorted(get_unique(self._X[:,ai]))
         
         # fit tree with id3 algorithm
-        self._tree = id3(self._X, self._y, function=self._function, A=A, Av=Av, max_depth=self._maxDepth, weight=weight, sub_size=self._subSize) #######################
+        self._tree = id3(self._X, self._y, function=self._function, A=A, Av=Av, max_depth=self._maxDepth, weight=weight, sub_size=self._subSize)
         
     def predict(self, X, verbose=False):
         
@@ -497,46 +464,3 @@ def dtree_accuracy(X_train, y_train, X_test, y_test, functions, depths):
     results_test['depth']=depths
     
     return results_train, results_test
-
-####################################################################################################################################################
-# random forest
-
-class RandomForest(object):
-    
-    def __init__(self, num_trees=10, max_depth=2):
-        
-        self.num_trees = num_trees
-        self.max_depth = max_depth
-        
-    def fit(self, X, y):
-        
-        choices = np.arange(X.shape[1])
-        
-        self.sub_idx = [np.random.choice(choices, size=self.max_depth, replace=False) for i in range(self.num_trees)]
-        
-        self.trees=[]
-        for idx in self.sub_idx:
-            X_sub = X[:, idx].copy()
-            
-            t = DecisionTree()
-            t.fit(X_sub, y)
-            self.trees.append(t)
-            
-    def predict(self, X):
-        
-        # get individual predictions for each tree
-        pred=[]
-        for i, t in enumerate(self.trees):
-            
-            X_sub = X[:, self.sub_idx[i]].copy()
-            pred.append(t.predict(X_sub))
-            
-        pred = np.array(pred).T
-        
-        # vote for true prediction
-        y_pred=[]
-        for i in range(len(pred)):
-            val, cnt = np.unique(pred[i], return_counts=True)
-            y_pred.append(val[cnt.argmax()])
-            
-        return np.array(y_pred)
