@@ -106,15 +106,12 @@ class LinearRegression(object):
             
         w_prev = self.W.copy()
             
-        # initialize loss to large number
-        prev_loss = np.float('inf')
-#         diff = np.float('inf')
+        # initialize norm to large number
         w_norm = np.float('inf')
             
         # perform gradient descent
         self.loss=[]
         count=0
-#         while diff > self.tol:
         while w_norm > self.tol:
             
             # end if the max number of iterations has been exceeded
@@ -122,46 +119,36 @@ class LinearRegression(object):
                 print("Exceeded Max Iterations")
                 break
                 
-            # end if loss is increasing
-            elif count > 1 and loss > self.loss[0]:
-                print('Loss Increasing')
-                break
-                
             # look at current state
             pred = get_prediction(X, self.W) # get prediction of X
             loss = mean_square_loss(y, pred) # get loss of prediction
             self.loss.append(loss) # store loss
-            
-            # get difference to compare to the tolerance
-            diff = np.abs(loss - prev_loss)
-            prev_loss = loss
                 
             # perform batch learning method
             if self.method=='batch':
-                
                 grad = compute_gradient(X, y, pred) # compute gradient
                 w_next = next_weight(self.W, grad, r) # update weight
-#                 self.W = next_weight(self.W, grad, r) # update weight
-                w_norm = np.linalg.norm((w_next - self.W))
-                self.W = w_next
     
-    
-                
             # perform stochastic gradient descent
             elif self.method=='sgd':
-                
-                for i in range(len(X)):
-                    Xi = X[i].reshape(1, -1)
-                    yi = y[i]
-                    pred = get_prediction(Xi, self.W) # get prediction of X
-                    grad = compute_gradient(Xi, yi, pred) # compute gradient
-                    w_next = next_weight(self.W, grad, r) # update weight
-                    self.W = w_next
-                    
-                w_norm = np.linalg.norm((w_next - w_prev))
-                w_prev = w_next.copy()
+                idx = np.random.randint(X.shape[0])
+                Xi = X[idx].reshape(1, -1)
+                yi = y[idx]
+                pred = get_prediction(Xi, self.W) # get prediction of X
+                grad = compute_gradient(Xi, yi, pred) # compute gradient
+                w_next = next_weight(self.W, grad, r) # update weight
+
+            # calcuate norm with previous weight
+            w_norm = np.linalg.norm((w_next - self.W))
+            # update weight
+            self.W = w_next
                     
             count += 1
+            
+        # add final loss
+        pred = get_prediction(X, self.W) # get prediction of X
+        loss = mean_square_loss(y, pred) # get loss of prediction
+        self.loss.append(loss) # store loss
             
     def predict(self, X):
         '''
