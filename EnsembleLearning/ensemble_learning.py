@@ -47,19 +47,23 @@ def entropy(y, weight=[], fn_log = np.log2):
 
 
 
-def majority_error(y):
+def majority_error(y, weight=[]):
     '''
     Calculates majority error for the labels contained in y
     '''
+    
+    if len(weight)==0:
+        weight = np.ones(len(y))
     
     # get unique values
     y_unique = list(set(y))
     
     # get total number of values
-    y_total = len(y)
+#     y_total = len(y)
+    y_total = weight.sum()
     
     # compute ratios (p- p+)
-    ratio=[np.sum(y == i) / y_total for i in y_unique]
+    ratio=[np.sum(weight[y == i]) / y_total for i in y_unique]
     
     # compute ME
     H = 1 - max(ratio)
@@ -68,19 +72,24 @@ def majority_error(y):
 
 
 
-def gini_index(y):
+def gini_index(y, weight=[]):
     '''
     Calculates Gini Index for the labels contained in y
     '''
+    
+    if len(weight)==0:
+        weight = np.ones(len(y))
     
     # get unique values
     y_unique = list(set(y))
     
     # get total number of values
-    y_total = len(y)
+#     y_total = len(y)
+    y_total = weight.sum()
     
     # compute ratios (p- p+)
-    ratio=[np.sum(y == i) / y_total for i in y_unique]
+#     ratio=[np.sum(y == i) / y_total for i in y_unique]
+    ratio=[np.sum(weight[y == i]) / y_total for i in y_unique]
     
     # compute Gini index
     H = np.sum([p**2 for p in ratio])
@@ -197,9 +206,9 @@ class Node(object):
         '''
         self.children.append(obj)
 
-        
-        
-def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf'), prev_common=None, weight=[]):
+
+
+def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf'), prev_common=None, weight=[], sub_size=None):
     '''
     ID3 algorithm used to construct a decision tree through recursion
     
@@ -241,13 +250,29 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
         return Node(leaf=True, label=y_common)
     
     else:
-        # find attribute that best splits X with information gain
-        # note X is a subset based on A so idx needs to reference A to get true index (key)
-#         print(weight)
-        idx = compute_gain(X[:, A], y, weight=weight, fn_gain=function).argmax() #######################################################################################################
+        
+        if not sub_size:
+            # find attribute that best splits X with information gain
+            # note X is a subset based on A so idx needs to reference A to get true index (key)
+            idx = compute_gain(X[:, A], y, weight=weight, fn_gain=function).argmax() ##################################
+
+            # get key for the current split
+            key = A[idx] # best attibute
+            
+        else:
+            # ensure valid sub_size
+            sub_size = len(A) if len(A) < sub_size else sub_size
+            
+            # get random subset of A
+            sub_idx = np.random.choice(A, size=sub_size, replace=False)
+            
+            # compute gain
+            idx = compute_gain(X[:, sub_idx], y, weight=weight, fn_gain=function).argmax()
+            
+            key = sub_idx[idx]
+            
         
         # create a node for best attribute A
-        key = A[idx] # best attibute
         root = Node(key=key, branches=np.array(Av[key]), most_common=y_common) # root node**
         
         # get unique values of A (branches)
@@ -269,7 +294,7 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
             
             # call id3 for next data (X_next, y_next, A_next) going one level deeper
             # note the output of id3 is added as a child to the root node created above **
-            root.add_child(id3(X_next, y_next, function=function, A=A_next, Av=Av, depth=depth, max_depth=max_depth, prev_common=y_common, weight=weight)) ##########################################
+            root.add_child(id3(X_next, y_next, function=function, A=A_next, Av=Av, depth=depth, max_depth=max_depth, prev_common=y_common, weight=weight, sub_size=sub_size))
             
         return root
 
@@ -339,25 +364,25 @@ def predict_many(t, tree, verbose=False):
 
 
 
-def get_medians(X):
-    '''
-    Calculates attribute-wise median of numeric data
+# def get_medians(X):
+#     '''
+#     Calculates attribute-wise median of numeric data
     
-    Input:
-    X -- data of shape (n, a) where n is number of samples and a is number of attributes
+#     Input:
+#     X -- data of shape (n, a) where n is number of samples and a is number of attributes
     
-    Returns: 
-    medians -- dictionary of {attribute index: attribute mean} for all numeric attributes
-    '''
-    medians={}
-    for j in range(X.shape[1]):
-        try:
-            med = np.median(X[:, j])
-            medians[j] = med
-        except:
-            pass
+#     Returns: 
+#     medians -- dictionary of {attribute index: attribute mean} for all numeric attributes
+#     '''
+#     medians={}
+#     for j in range(X.shape[1]):
+#         try:
+#             med = np.median(X[:, j])
+#             medians[j] = med
+#         except:
+#             pass
         
-    return medians
+#     return medians
 
 
 
@@ -387,24 +412,20 @@ class DecisionTree(object):
     predict -- makes prediction from decision tree
     '''
     
-    def __init__(self, function=entropy, max_depth=np.float('inf')):
+    def __init__(self, function=entropy, max_depth=np.float('inf'), subSize=None):
         
         # initialize variables
         self._function = function
         self._maxDepth = max_depth
         self._medians = None
         self._tree = None
+        self._subSize = subSize
         
     def fit(self, X, y, weight=[]): #########################################################################################################################################
         
         # copy data into class so original data is not changed
         self._X = X.copy()
         self._y = y.copy()
-        
-        # process numeric data by above median True, below or equal to median False
-        self._medians = get_medians(self._X)
-        for k in self._medians.keys():
-            self._X[:, k] = self._X[:, k] > self._medians[k]
         
         # get list of attributes (A) and all branches (Av)
         # initialized to avoid conflicts in scope
@@ -418,7 +439,7 @@ class DecisionTree(object):
                 Av[ai] = sorted(get_unique(self._X[:,ai]))
         
         # fit tree with id3 algorithm
-        self._tree = id3(self._X, self._y, function=self._function, A=A, Av=Av, max_depth=self._maxDepth, weight=weight) ##########################################################################
+        self._tree = id3(self._X, self._y, function=self._function, A=A, Av=Av, max_depth=self._maxDepth, weight=weight, sub_size=self._subSize) #######################
         
     def predict(self, X, verbose=False):
         
@@ -429,12 +450,6 @@ class DecisionTree(object):
         if len(self._Xpred.shape) < 2:
             self._Xpred = self._Xpred.reshape(1, -1)
         
-        # process numeric data
-        if len(self._medians) > 0:
-            for k in self._medians.keys():
-                self._Xpred[:, k] = self._Xpred[:, k] > self._medians[k]
-
-        # return predictions
         return predict_many(self._Xpred, self._tree, verbose=verbose)
     
     
@@ -485,23 +500,19 @@ def dtree_accuracy(X_train, y_train, X_test, y_test, functions, depths):
 
 ####################################################################################################################################################
 # random forest
-def get_sub_feature_idx(X, num_idx=[2, 4, 6]):
-    _, M = X.shape
-    idx_choices = np.arange(M)
-    num_feats = np.random.choice(num_idx, size=1)
-    idx_feats = np.random.choice(idx_choices, size=num_feats, replace=False)
-    return idx_feats
 
 class RandomForest(object):
     
-    def __init__(self, num_trees=10, sizes=[2, 4, 6]):
+    def __init__(self, num_trees=10, max_depth=2):
         
         self.num_trees = num_trees
-        self._sizes = sizes
+        self.max_depth = max_depth
         
     def fit(self, X, y):
         
-        self.sub_idx = [get_sub_feature_idx(X, self._sizes) for i in range(self.num_trees)]
+        choices = np.arange(X.shape[1])
+        
+        self.sub_idx = [np.random.choice(choices, size=self.max_depth, replace=False) for i in range(self.num_trees)]
         
         self.trees=[]
         for idx in self.sub_idx:
