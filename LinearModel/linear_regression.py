@@ -104,14 +104,18 @@ class LinearRegression(object):
         else:
             self.W = np.zeros(shape=(M))
             
+        w_prev = self.W.copy()
+            
         # initialize loss to large number
         prev_loss = np.float('inf')
-        diff = np.float('inf')
+#         diff = np.float('inf')
+        w_norm = np.float('inf')
             
         # perform gradient descent
         self.loss=[]
         count=0
-        while diff > self.tol:
+#         while diff > self.tol:
+        while w_norm > self.tol:
             
             # end if the max number of iterations has been exceeded
             if count > max_iter:
@@ -136,7 +140,12 @@ class LinearRegression(object):
             if self.method=='batch':
                 
                 grad = compute_gradient(X, y, pred) # compute gradient
-                self.W = next_weight(self.W, grad, r) # update weight
+                w_next = next_weight(self.W, grad, r) # update weight
+#                 self.W = next_weight(self.W, grad, r) # update weight
+                w_norm = np.linalg.norm((w_next - self.W))
+                self.W = w_next
+    
+    
                 
             # perform stochastic gradient descent
             elif self.method=='sgd':
@@ -146,7 +155,11 @@ class LinearRegression(object):
                     yi = y[i]
                     pred = get_prediction(Xi, self.W) # get prediction of X
                     grad = compute_gradient(Xi, yi, pred) # compute gradient
-                    self.W = next_weight(self.W, grad, r) # update weight
+                    w_next = next_weight(self.W, grad, r) # update weight
+                    self.W = w_next
+                    
+                w_norm = np.linalg.norm((w_next - w_prev))
+                w_prev = w_next.copy()
                     
             count += 1
             
@@ -163,3 +176,21 @@ class LinearRegression(object):
         y_pred = get_prediction(X, self.W)
         
         return y_pred
+    
+    
+def optimal_weight_vector(X, y):
+    
+    # add bias term to x
+    b = np.ones(len(X)).reshape(-1, 1)
+    x = np.concatenate([b, X.copy()], axis=1)
+    
+    # XT X
+    xx = x.T.dot(x)
+    # X-1
+    xx1 = np.linalg.inv(xx)
+    # Xy
+    xy = x.T.dot(y)
+    
+    optimal_weight = xx1.dot(xy)
+    
+    return optimal_weight
