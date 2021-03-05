@@ -212,6 +212,10 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
     Returns:
     root -- root node from a pass through the algorithm. With recursion this creates a tree
     '''
+    
+    if len(weight) == 0:
+        weight = np.ones_like(y)
+    
     # increase level of depth every time the function is called
     depth += 1
     
@@ -219,11 +223,10 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
     # If empty return leaf with previous most common label
     if len(y) == 0:
         return Node(leaf=True, label=prev_common)
-    
-    # get all unique values of y and the most common value of y
-    y_unique = get_unique(y)
-    val, cnt = np.unique(y, return_counts=True)
-    y_common = val[cnt.argmax()]
+
+    y_unique = np.unique(y)
+    cnt = np.array([weight[y==v].sum() for v in y_unique])
+    y_common = y_unique[cnt.argmax()]
     
     # if all examples have same label return a leaf node with label
     if len(y_unique) < 2:
@@ -243,6 +246,8 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
         if not sub_size:
             # find attribute that best splits X with information gain
             # note X is a subset based on A so idx needs to reference A to get true index (key)
+            
+#             print('GAIN', compute_gain(X[:, A], y, weight=weight, fn_gain=function))
             idx = compute_gain(X[:, A], y, weight=weight, fn_gain=function).argmax()
 
             # get key for the current split
@@ -282,9 +287,11 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
             X_next = X[child_idx].copy() # subset X
             y_next = y[child_idx].copy() # subset y
             
+            weight_next = weight[child_idx] # subset weight
+            
             # call id3 for next data (X_next, y_next, A_next) going one level deeper
             # note the output of id3 is added as a child to the root node created above **
-            root.add_child(id3(X_next, y_next, function=function, A=A_next, Av=Av, depth=depth, max_depth=max_depth, prev_common=y_common, weight=weight, sub_size=sub_size))
+            root.add_child(id3(X_next, y_next, function=function, A=A_next, Av=Av, depth=depth, max_depth=max_depth, prev_common=y_common, weight=weight_next, sub_size=sub_size))
             
         return root
 
