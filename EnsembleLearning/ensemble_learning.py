@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy import stats
 
 
 def get_unique(x):
@@ -284,8 +284,8 @@ def id3(X, y, function=entropy, A=[], Av={}, depth=-1, max_depth=np.float('inf')
             child_idx = np.where(child_values == v)[0]
                 
             # subset data
-            X_next = X[child_idx].copy() # subset X
-            y_next = y[child_idx].copy() # subset y
+            X_next = X[child_idx] # subset X
+            y_next = y[child_idx] # subset y
             
             weight_next = weight[child_idx] # subset weight
             
@@ -471,3 +471,242 @@ def dtree_accuracy(X_train, y_train, X_test, y_test, functions, depths):
     results_test['depth']=depths
     
     return results_train, results_test
+
+#####################################################################################################################################
+### Adaboost ###
+
+def compute_alpha_epsilon(y_true, y_pred, weight):
+        
+    epsilon = weight[y_true != y_pred].sum()
+    
+    alpha = 0.5 * np.log((1-epsilon)/(epsilon))
+    
+    return alpha, epsilon
+
+def compute_next_weight(y_true, y_pred, weight, alpha):
+    
+    next_weight = (y_true * y_pred).astype(np.float)
+    next_weight *= -alpha
+    
+    next_weight = np.exp(next_weight)
+    
+    next_weight *= weight
+    
+    Zt = next_weight.sum()
+    
+    next_weight /= Zt
+    
+    return next_weight
+
+class Adaboost(object):
+    
+    def __init__(self, function=entropy):
+        self._function = function
+        
+    def fit(self, X, y, T=10):
+        
+        # copy in variables
+        self._X = X.copy()
+        self._y = y.copy()
+        self._T = T
+        
+        # initialize weigths
+        weight = np.ones_like(y) / len(y)
+        
+        # initialize lists to store variables
+        self._stump=[]
+        self._alpha=[]
+        self._epsilon=[]
+        self._key=[]
+        
+        for i in range(self._T):
+
+            #find decision stump i
+            stump = DecisionTree(max_depth=1)
+            stump.fit(self._X, self._y, weight=weight)
+            self._stump.append(stump)
+
+            # get current predictions
+            y_pred = self._stump[i].predict(self._X)
+
+            # find alpha
+            alpha, eps = compute_alpha_epsilon(self._y, y_pred, weight)
+            self._alpha.append(alpha)
+            self._epsilon.append(eps)
+
+            # update weights for next stump
+            weight = compute_next_weight(self._y, y_pred, weight, alpha)
+            
+            # append key for troubleshooting
+            self._key.append(self._stump[i]._tree.key)
+            
+    def predict(self, X, num_iter=None, binary=True, store_prev=False):
+        
+        self._Xpred = X.copy()
+        
+        if not num_iter:
+            num_iter=self._T
+            
+        if store_prev:
+            stump_predictions=[]
+            iter_predictions=[]
+        
+        # initialize all predictions to 0
+        y_pred = np.zeros(self._Xpred.shape[0])
+        
+        # loop over all trees T
+        for i in range(num_iter):
+            
+            # get current vote
+            pred_t = self._stump[i].predict(self._Xpred).astype(np.float)
+            
+            if store_prev:
+                stump_predictions.append(pred_t.copy())
+            
+            pred_t *= self._alpha[i]
+            
+            # add to total vote
+            y_pred += pred_t
+            
+            if store_prev:
+                iter_predictions.append(y_pred.copy())
+            
+        # convert to binary output based on the sign
+        if binary:
+            y_pred[y_pred < 0] = -1
+            y_pred[y_pred >= 0] = 1
+            y_pred = y_pred.astype(np.int)
+            
+        if store_prev:
+            return y_pred, np.array(iter_predictions), np.array(stump_predictions)
+        else:
+            return y_pred
+        
+#####################################################################################################################################
+### Bagging ###
+
+class Bagging(object):
+    
+    def __init__(self, num_trees=10):
+        
+        self.num_trees = num_trees
+        
+    def fit(self, X, y, m=None):
+        
+        # if m is not specified set m to the number of columns in X
+        if not m:
+            m = X.shape[0]
+        
+        self.trees=[]
+        for i in range(self.num_trees):
+            
+            bootstrap = np.random.randint(X.shape[0], size=m)
+            
+            X_boot = X[bootstrap].copy()
+            y_boot = y[bootstrap].copy()
+            
+            t = DecisionTree()
+            t.fit(X_boot, y_boot)
+            self.trees.append(t)
+            
+    def predict(self, X, individual=False):
+        
+        # get individual predictions for each tree
+        pred=[]
+        for i, t in enumerate(self.trees):
+            
+            pred.append(t.predict(X))
+            
+        pred = np.array(pred).T
+        
+        # vote for true prediction
+        y_pred=[]
+        for i in range(len(pred)):
+            val, cnt = np.unique(pred[i], return_counts=True)
+            y_pred.append(val[cnt.argmax()])
+            
+        if individual:
+            return np.array(y_pred), pred
+        else:
+            return np.array(y_pred)
+        
+#####################################################################################################################################
+### Random Forest ###
+
+class RandomForest(object):
+    
+    def __init__(self, num_trees=10, sub_size=2):
+        
+        self.num_trees = num_trees
+        self.sub_size = sub_size
+        
+    def fit(self, X, y, m=None):
+        
+        # if m is not specified set m to the number of columns in X
+        if not m:
+            m = X.shape[0]
+        
+        self.trees=[]
+        for i in range(self.num_trees):
+            
+            bootstrap = np.random.randint(X.shape[0], size=m)
+            
+            X_boot = X[bootstrap].copy()
+            y_boot = y[bootstrap].copy()
+            
+            t = DecisionTree(subSize=self.sub_size)
+            t.fit(X_boot, y_boot)
+            self.trees.append(t)
+            
+    def predict(self, X, individual=False):
+        
+        # get individual predictions for each tree
+        pred=[]
+        for i, t in enumerate(self.trees):
+            
+            pred.append(t.predict(X))
+            
+        pred = np.array(pred).T
+        
+        # vote for true prediction
+        y_pred=[]
+        for i in range(len(pred)):
+            val, cnt = np.unique(pred[i], return_counts=True)
+            y_pred.append(val[cnt.argmax()])
+            
+        if individual:
+            return np.array(y_pred), pred
+        else:
+            return np.array(y_pred)
+
+#####################################################################################################################################
+
+def get_bias_variance_gse(predictions, labels, return_mean=True):
+    
+    bias_arr = (labels - predictions.mean(axis=0))**2
+    bias_avg = bias_arr.mean()
+    
+    variance_arr = predictions.var(axis=0)
+    variance_avg = variance_arr.mean()
+    
+    gse_arr = bias_arr + variance_arr
+    gse_avg = gse_arr.mean()
+    
+    if return_mean:
+        return bias_avg, variance_avg, gse_avg
+    else:
+        return bias_arr, variance_arr, gse_arr
+    
+def get_incremental_error(model, X, y):
+    
+    y_pred, t_pred = model.predict(X, individual=True)
+    
+    error_val=[]
+    for i in range(t_pred.shape[1]):
+        i+=1
+        tp = t_pred[:, :i]
+        tp = stats.mode(tp, axis=1)[0].reshape(-1)
+
+        error_val.append(1 - accuracy(tp, y))
+        
+    return np.array(error_val)
