@@ -27,3 +27,7 @@ The Random Forest class allows the user to specify the number of trees to create
 ## Linear Model
 
 The LinearRegression class can be imported from linear_regression.py. This class allows the user to select whether to use batch or stochastic gradient descent while fitting to the trainig data. 
+
+## Perceptron
+
+The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. 
