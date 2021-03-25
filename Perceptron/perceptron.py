@@ -5,6 +5,14 @@ from random import shuffle
 # ----------------------------------------------------------------------------------------------
 # function to read data-------------------------------------------------------------------------
 def read_bank_note(test=False, data_frame=False):
+    '''
+    Function to read the bank-note dataset from the data folder
+    
+    Input:
+    test       -- (bool) if true returns the test data otherwise it returns the training data
+    data_frame -- (bool) if true returns the data as a pandas dataframe otherwise as numpy arrays
+    '''
+    
     colnames=['variance', 'skewness', 'curtosis', 'entropy', 'y']
     if test:
         data = pd.read_csv('../data/bank-note/test.csv', header=None, names=colnames)
@@ -21,26 +29,53 @@ def read_bank_note(test=False, data_frame=False):
 # ----------------------------------------------------------------------------------------------
 # helper functions for perceptron---------------------------------------------------------------
 def add_bias(X):
+    '''
+    This function adds a bias term to the numpy array X
+    '''
     bias = np.ones(X.shape[0]).reshape(-1, 1)
     X_fit = X.copy()
     X_fit = np.concatenate([bias, X_fit], axis=1)
     return X_fit
 
 def pos_neg(x):
+    '''
+    Changes boolean output to 1 and -1
+    '''
     return 1 if x > 0 else -1
 
 def get_sign(y):
+    '''
+    Maps the pos_neg function over an array
+    '''
     return np.array(list(map(pos_neg, y)))
 
 def get_accuracy(y_pred, y):
+    '''
+    Calculates the accuracy
+    '''
     return (y_pred == y).sum() / len(y)
 
 def get_error(y_pred, y):
+    '''
+    Calculates the error
+    '''
     return (y_pred != y).sum() / len(y)
 
 # ----------------------------------------------------------------------------------------------
 # fit and predict functions for standard perceptron---------------------------------------------
 def fit_standard(X, y, T, lr):
+    '''
+    Applies the standard algorithm of Perceptron
+    
+    Input:
+    X  -- Array with the training examples augmented with a bias term
+    y  -- Array with training labels (1, -1)
+    T  -- Number of epochs to train for
+    lr -- Learning rate
+    
+    Return:
+    w -- Learned weights of the perceptron
+    '''
     
     # unpack X dimensions
     N, D = X.shape
@@ -76,6 +111,16 @@ def fit_standard(X, y, T, lr):
     return w
 
 def predict_standard(X, w):
+    '''
+    Uses weights from the standard or averaged Perceptron to get predictons
+    
+    Input:
+    X -- array of data to be used for predictions
+    w -- learned weights
+    
+    Return:
+    y_pred -- array of predictions
+    '''
     
     # get prediction
     y_pred = X.dot(w)
@@ -88,6 +133,19 @@ def predict_standard(X, w):
 # ----------------------------------------------------------------------------------------------
 # fit and predict functions for voted perceptron------------------------------------------------
 def fit_voted(X, y, T, lr):
+    '''
+    Applies the voted variant of Perceptron
+    
+    Input:
+    X  -- Array with the training examples augmented with a bias term
+    y  -- Array with training labels (1, -1)
+    T  -- Number of epochs to train for
+    lr -- Learning rate
+    
+    Return:
+    w -- Learned weights of the perceptron
+    C -- Counts for each weight
+    '''
     
     # unpack X dimensions
     N, D = X.shape
@@ -136,6 +194,17 @@ def fit_voted(X, y, T, lr):
     return w, C
 
 def predict_voted(X, w, C):
+    '''
+    Uses weights from the voted Perceptron to get predictons
+    
+    Input:
+    X -- array of data to be used for predictions
+    w -- learned weights
+    C -- votes for each weight vector
+    
+    Return:
+    y_pred -- array of predictions
+    '''
     
     # initialize predictions to all zeros
     y_pred = np.zeros(X.shape[0])
@@ -159,6 +228,18 @@ def predict_voted(X, w, C):
 # ----------------------------------------------------------------------------------------------
 # fit and predict functions for averaged perceptron---------------------------------------------
 def fit_averaged(X, y, T, lr):
+    '''
+    Applies the averaged variant of Perceptron
+    
+    Input:
+    X  -- Array with the training examples augmented with a bias term
+    y  -- Array with training labels (1, -1)
+    T  -- Number of epochs to train for
+    lr -- Learning rate
+    
+    Return:
+    a -- Learned weights of the perceptron
+    '''
     
     # unpack X dimensions
     N, D = X.shape
@@ -200,6 +281,17 @@ def fit_averaged(X, y, T, lr):
 # ----------------------------------------------------------------------------------------------
 # perceptron class------------------------------------------------------------------------------
 class Perceptron(object):
+    '''
+    A class to conveniently use the Perceptron functions
+    
+    Input:
+    version -- string to choose which implementaiton (standard, voted, averaged) 
+    lr      -- learning rate
+    
+    Methods:
+    fit     -- uses the specified version of perceptron to fit the data
+    predict -- uses the learned parameters from "fit" to make predictions
+    '''
     
     def __init__(self, version='standard', lr=0.01):
         
