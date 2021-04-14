@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from random import shuffle
+from scipy.optimize import minimize
 
 # ----------------------------------------------------------------------------------------------
 # function to read data-------------------------------------------------------------------------
@@ -118,6 +119,62 @@ def predict_primal(X, w):
     
     return y_pred
 
+
+def fit_dual(X, y, C, max_iter=100000, verbose=True):
+    
+    # calculate xy term
+    y_term = y.copy().reshape(-1, 1)
+    y_term = y_term.dot(y_term.T)
+    x_term = X.dot(X.T)
+    xy_term = y_term * x_term
+    
+    # define objective funciton
+    def dual_func(alpha, xy_term=xy_term):
+        alpha = alpha.reshape(-1, 1)
+        alpha_term = alpha.dot(alpha.T)
+        return 0.5 * (xy_term * alpha_term).sum() - alpha.sum()
+    
+    # define constraints
+    def const_1(alpha, C=C):
+        return -1 * (alpha - C)
+    def const_2(alpha, y=y):
+        return (alpha * y).sum()
+    constraint_1 = {'type':'ineq', 'fun':const_1}
+    constraint_2 = {'type':'eq', 'fun':const_2}
+    constraints = (constraint_1, constraint_2)
+    
+    # define bounds
+    bounds = [(0, C) for i in y]
+    
+    # initial alpha
+    alpha0 = np.zeros_like(y)
+    
+    # perform optimization
+    result = minimize(dual_func, x0=alpha0, bounds=bounds, method='SLSQP', constraints=constraints, options={'maxiter':max_iter})
+    
+    if verbose:
+        print(f"Optimization Converged: {result.success}")
+        print(result.message)
+        
+    if result.success:
+        # get alpha
+        alpha = result.x
+        
+        # compute weight
+        w = (alpha * y).reshape(-1, 1) * X
+        w = w.sum(axis=0)
+        
+        # compute bias
+        j_filter = alpha != 0
+        x_bias = X[j_filter]
+        y_bias = y[j_filter]
+        b = (y_bias * x_bias.dot(w)).mean()
+        
+        # combine weight and bias into one vector
+        w_star = np.concatenate([w, np.array([b])])
+        
+        return w_star
+
 # ----------------------------------------------------------------------------------------------
 # SVM Class-------------------------------------------------------------------------------------
 class SVM(object):
@@ -129,18 +186,21 @@ class SVM(object):
         self.gamma0 = gamma0
         self.d = d
         
-    def fit(self, X, y, T=100):
+    def fit(self, X, y, T=100, max_iter=100000, verbose=True):
         
         X_fit = add_bias(X)
         
         if self.version == 'primal':
             self.w = fit_primal(X_fit, y, T=T, C=self.C, gamma0=self.gamma0, d=self.d)
+        if self.version == 'dual':
+            self.w = fit_dual(X, y, C=self.C, max_iter=max_iter, verbose=verbose)
+            
             
     def predict(self, X):
         
         X_pred = add_bias(X)
         
-        if self.version == 'primal':
+        if (self.version == 'primal') or (self.version == 'dual'):
             y_pred = predict_primal(X_pred, self.w)
             
         return y_pred
