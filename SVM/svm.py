@@ -67,11 +67,35 @@ def get_gamma(t, gamma0=1e-2, d=None):
         return gamma0 / (1 + t)
     else:
         return gamma0 / (1 + (gamma0 / d) * t)
-
+    
+def J_objective(X, y, w, C):
+    '''
+    SVM loss function to be minimized during training
+    
+    Input:
+    X -- feature vector with bias term (1's) added to last column
+    y -- example labels
+    w -- weight vector with bias term added to the end
+    C -- hyperparameter
+    
+    Output:
+    J -- SVM loss
+    '''
+    # regularization term
+    term1 = 0.5 * w[:-1].T.dot(w[:-1])
+    
+    # term with the summation and max operator
+    term2 = 1 - (X.dot(w) * y)
+    term2[term2<0]=0
+    term2 = C * term2.sum()
+    
+    J = term1 + term2
+    
+    return J
 
 # ----------------------------------------------------------------------------------------------
 # fit and predict functions for SVM-------------------------------------------------------------
-def fit_primal(X, y, T, C, gamma0=1e-2, d=None):
+def fit_primal(X, y, T, C, gamma0=1e-2, d=None, tol=1e-5, verbose=True):
 
     # unpack X dimensions
     N, D = X.shape
@@ -81,6 +105,8 @@ def fit_primal(X, y, T, C, gamma0=1e-2, d=None):
 
     # get range of indicies
     idx_order = np.arange(N)
+    
+    J_prev = J_objective(X, y, w, C)
 
     # loop for number of epochs T
     for i in range(T):
@@ -110,6 +136,17 @@ def fit_primal(X, y, T, C, gamma0=1e-2, d=None):
             else:
                 w[:-1] = (1 - gamma) * w[:-1]
                 
+        J_curr = J_objective(X, y, w, C)
+        delta_J = np.abs(J_curr - J_prev)
+#         print(delta_J)
+        
+        if delta_J < tol:
+            if verbose:
+                print(f"Converged at T={i}")
+            break
+            
+        J_prev = J_curr
+                
     return w
 
 def predict_primal(X, w):
@@ -120,12 +157,34 @@ def predict_primal(X, w):
     return y_pred
 
 
-def fit_dual(X, y, C, max_iter=100000, verbose=True):
+
+def linear_kernel(x):
+    return x.dot(x.T)
+
+def gaussian_kernel(x, gamma=0.1, x_test=None):
+    
+    D = len(x)
+    x_term = np.zeros((D, D))
+    for i in range(D):
+        x_term[i] = np.linalg.norm((x[i] - x), axis=1)  
+        
+    x_term = x_term**2
+    x_term = -x_term / gamma
+    x_term = np.exp(x_term)
+    
+    return x_term
+
+def fit_dual_linear(X, y, C, eps=1e-9, max_iter=100000, verbose=True):
     
     # calculate xy term
+    # get x term based on the kernel
+    x_term = linear_kernel(X)
+    
+    # get the y term
     y_term = y.copy().reshape(-1, 1)
     y_term = y_term.dot(y_term.T)
-    x_term = X.dot(X.T)
+    
+    # combine into the xy term
     xy_term = y_term * x_term
     
     # define objective funciton
@@ -135,16 +194,15 @@ def fit_dual(X, y, C, max_iter=100000, verbose=True):
         return 0.5 * (xy_term * alpha_term).sum() - alpha.sum()
     
     # define constraints
-    def const_1(alpha, C=C):
-        return -1 * (alpha - C)
-    def const_2(alpha, y=y):
+    def const_1(alpha, y=y):
         return (alpha * y).sum()
-    constraint_1 = {'type':'ineq', 'fun':const_1}
-    constraint_2 = {'type':'eq', 'fun':const_2}
-    constraints = (constraint_1, constraint_2)
+    constraint_1 = {'type':'eq', 'fun':const_1}
+    constraints = (constraint_1)
     
     # define bounds
-    bounds = [(0, C) for i in y]
+    lower = 0
+    upper = C
+    bounds = [(lower, upper) for i in y]
     
     # initial alpha
     alpha0 = np.zeros_like(y)
@@ -159,48 +217,68 @@ def fit_dual(X, y, C, max_iter=100000, verbose=True):
     if result.success:
         # get alpha
         alpha = result.x
+        alpha[alpha < eps] = 0
         
-        # compute weight
-        w = (alpha * y).reshape(-1, 1) * X
-        w = w.sum(axis=0)
+        return alpha
+    
+    else:
+        print('No alpha found')
+        return None
+    
+def get_dual_weight_linear(X, y, alpha):
         
-        # compute bias
-        j_filter = alpha != 0
-        x_bias = X[j_filter]
-        y_bias = y[j_filter]
-        b = (y_bias * x_bias.dot(w)).mean()
+    # compute weight
+    w = (alpha * y).reshape(-1, 1) * X
+    w = w.sum(axis=0)
         
-        # combine weight and bias into one vector
-        w_star = np.concatenate([w, np.array([b])])
+    # compute bias
+    j_filter = alpha > 0
+    x_bias = X[j_filter]
+    y_bias = y[j_filter]
+    b = (y_bias - x_bias.dot(w)).mean()
         
-        return w_star
+    # combine weight and bias into one vector
+    w_star = np.concatenate([w, np.array([b])])
+        
+    return w_star
 
 # ----------------------------------------------------------------------------------------------
 # SVM Class-------------------------------------------------------------------------------------
 class SVM(object):
     
-    def __init__(self, C, version='primal', gamma0=1e-2, d=None):
+    def __init__(self, C=100/873, gamma0=1e-2, d=None):
         
         self.C = C
-        self.version = version
         self.gamma0 = gamma0
         self.d = d
         
-    def fit(self, X, y, T=100, max_iter=100000, verbose=True):
+    def fit(self, X, y, T=100, verbose=True, tol=1e-5):
         
         X_fit = add_bias(X)
-        
-        if self.version == 'primal':
-            self.w = fit_primal(X_fit, y, T=T, C=self.C, gamma0=self.gamma0, d=self.d)
-        if self.version == 'dual':
-            self.w = fit_dual(X, y, C=self.C, max_iter=max_iter, verbose=verbose)
-            
+        self.w = fit_primal(X_fit, y, T=T, C=self.C, gamma0=self.gamma0, d=self.d, tol=tol, verbose=verbose)
             
     def predict(self, X):
         
         X_pred = add_bias(X)
+        y_pred = predict_primal(X_pred, self.w)
         
-        if (self.version == 'primal') or (self.version == 'dual'):
-            y_pred = predict_primal(X_pred, self.w)
-            
+        return y_pred
+    
+    
+class SVM_Dual(object):
+    
+    def __init__(self, C=100/873):
+        
+        self.C = C
+        
+    def fit(self, X, y, max_iter=100000, verbose=True):
+        
+        self.alpha = fit_dual_linear(X, y, self.C, max_iter=max_iter, verbose=verbose)
+        self.w = get_dual_weight_linear(X, y, self.alpha)
+        
+    def predict(self, X):
+        
+        X_pred = add_bias(X)
+        y_pred = predict_primal(X_pred, self.w)
+        
         return y_pred
