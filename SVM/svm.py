@@ -158,15 +158,26 @@ def predict_primal(X, w):
 
 
 
-def linear_kernel(x):
-    return x.dot(x.T)
+def linear_kernel(x, x_pred=[]):
+    if len(x_pred)==0:
+        return x.dot(x.T)
+    else:
+        return x.dot(x_pred.T)
 
-def gaussian_kernel(x, gamma=0.1, x_test=None):
+def gaussian_kernel(x, x_pred=[], gamma=0.1):
     
     D = len(x)
-    x_term = np.zeros((D, D))
+    if len(x_pred)==0:
+        x2 = x
+        x_term = np.zeros((D, D))
+    else:
+        D2 = len(x_pred)
+        x2 = x_pred
+        x_term = np.zeros((D, D2))
+    
+    
     for i in range(D):
-        x_term[i] = np.linalg.norm((x[i] - x), axis=1)  
+        x_term[i] = np.linalg.norm((x[i] - x2), axis=1)  
         
     x_term = x_term**2
     x_term = -x_term / gamma
@@ -218,6 +229,7 @@ def fit_dual_linear(X, y, C, eps=1e-9, max_iter=100000, verbose=True):
         # get alpha
         alpha = result.x
         alpha[alpha < eps] = 0
+        alpha[alpha > (C - eps)] = C
         
         return alpha
     
@@ -225,14 +237,65 @@ def fit_dual_linear(X, y, C, eps=1e-9, max_iter=100000, verbose=True):
         print('No alpha found')
         return None
     
-def get_dual_weight_linear(X, y, alpha):
+def fit_dual_kernel(X, y, C, gamma=0.1, eps=1e-9, max_iter=100000, verbose=True):
+    
+    # calculate xy term
+    # get x term based on the kernel
+    x_term = gaussian_kernel(X, gamma=gamma)
+    
+    # get the y term
+    y_term = y.copy().reshape(-1, 1)
+    y_term = y_term.dot(y_term.T)
+    
+    # combine into the xy term
+    xy_term = y_term * x_term
+    
+    # define objective funciton
+    def dual_func(alpha, xy_term=xy_term):
+        alpha = alpha.reshape(-1, 1)
+        alpha_term = alpha.dot(alpha.T)
+        return 0.5 * (xy_term * alpha_term).sum() - alpha.sum()
+    
+    # define constraints
+    def const_1(alpha, y=y):
+        return (alpha * y).sum()
+    constraint_1 = {'type':'eq', 'fun':const_1}
+    constraints = (constraint_1)
+    
+    # define bounds
+    lower = 0
+    upper = C
+    bounds = [(lower, upper) for i in y]
+    
+    # initial alpha
+    alpha0 = np.zeros_like(y)
+    
+    # perform optimization
+    result = minimize(dual_func, x0=alpha0, bounds=bounds, method='SLSQP', constraints=constraints, options={'maxiter':max_iter})
+    
+    if verbose:
+        print(f"Optimization Converged: {result.success}")
+        print(result.message)
+        
+    if result.success:
+        # get alpha
+        alpha = result.x
+        alpha[alpha < eps] = 0
+        
+        return alpha
+    
+    else:
+        print('No alpha found')
+        return None
+    
+def get_dual_weight_linear(X, y, alpha, C):
         
     # compute weight
     w = (alpha * y).reshape(-1, 1) * X
     w = w.sum(axis=0)
         
     # compute bias
-    j_filter = alpha > 0
+    j_filter = (alpha > 0) & (alpha < C)
     x_bias = X[j_filter]
     y_bias = y[j_filter]
     b = (y_bias - x_bias.dot(w)).mean()
@@ -241,6 +304,24 @@ def get_dual_weight_linear(X, y, alpha):
     w_star = np.concatenate([w, np.array([b])])
         
     return w_star
+
+def get_dual_bias_kernel(Xi, yi, alpha, C, gamma=0.1):
+    
+    # get Xj and yj values
+    j_filter = (alpha > 0) & (alpha < C)
+    Xj, yj = Xi[j_filter], yi[j_filter]
+    
+    # perform kernel transformation
+    KX = gaussian_kernel(Xi, x_pred=Xj, gamma=gamma)
+    
+    # multipy alpha and yi
+    alpha_yi = alpha * yi
+    
+    # calculate bias
+    b = KX.T.dot(alpha_yi)
+    b = np.mean(yj - b)
+    
+    return b
 
 # ----------------------------------------------------------------------------------------------
 # SVM Class-------------------------------------------------------------------------------------
@@ -267,18 +348,36 @@ class SVM(object):
     
 class SVM_Dual(object):
     
-    def __init__(self, C=100/873):
+    def __init__(self, C=100/873, kernel='linear'):
         
         self.C = C
+        self.kernel = kernel
         
-    def fit(self, X, y, max_iter=100000, verbose=True):
+    def fit(self, X, y, max_iter=100000, verbose=True, gamma=0.1):
         
-        self.alpha = fit_dual_linear(X, y, self.C, max_iter=max_iter, verbose=verbose)
-        self.w = get_dual_weight_linear(X, y, self.alpha)
+        self.gamma = gamma
+        
+        if self.kernel == 'linear':
+            self.alpha = fit_dual_linear(X, y, self.C, max_iter=max_iter, verbose=verbose)
+            self.w = get_dual_weight_linear(X, y, self.alpha, self.C)
+            
+        elif self.kernel == 'gaussian':
+            self.Xi = X.copy()
+            self.yi = y.copy()
+            self.alpha = fit_dual_kernel(X, y, C=self.C, gamma=self.gamma, eps=1e-9, max_iter=max_iter, verbose=verbose)
+            self.b = get_dual_bias_kernel(self.Xi, self.yi, alpha=self.alpha, C=self.C, gamma=self.gamma)
         
     def predict(self, X):
         
-        X_pred = add_bias(X)
-        y_pred = predict_primal(X_pred, self.w)
+        if self.kernel == 'linear':
+            X_pred = add_bias(X)
+            y_pred = predict_primal(X_pred, self.w)
+            
+        elif self.kernel == 'gaussian':
+            t = gaussian_kernel(self.Xi, x_pred=X, gamma=self.gamma)
+            t = (self.alpha * self.yi).reshape(-1, 1) * t
+            t = t.sum(axis=0)
+            t += self.b
+            y_pred = get_sign(t)
         
         return y_pred
