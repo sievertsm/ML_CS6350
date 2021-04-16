@@ -31,3 +31,7 @@ The LinearRegression class can be imported from linear_regression.py. This class
 ## Perceptron
 
 The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. 
+
+## Support Vector Machine
+
+The support vector machine classes can be imported from svm.py. There are two classes available to import SVM in the primal and dual domains. SVM in the primal domain utilizes stochastic gradient descent to minimize the SVM loss. The dual form uses scipy to minimize the loss for the optimal solution. In the dual form both a linear and Gaussian kernel are available. 
