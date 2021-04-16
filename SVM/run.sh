@@ -1,4 +1,4 @@
 #!/bin/sh
 
-printf "\nRunning Problem 2.2\n"
-python problem2_2.py
+printf "\nRunning Problems\n"
+python svm_hw.py
