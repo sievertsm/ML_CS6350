@@ -74,7 +74,7 @@ def logistic_loss_map(X, y, w, sigma, M=1):
     else:
         return np.log(1 + np.exp(-y * X.dot(w))) * M + (1 / sigma**2) * w.T.dot(w)
     
-def logistic_loss_ml(X, y, w, sigma, M=1):
+def logistic_loss_ml(X, y, w, sigma=1, M=1):
     if np.isscalar(y):
         return np.log(1 + np.exp(-y * w.T.dot(X))) * M
     else:
@@ -86,7 +86,7 @@ def logistic_loss_grad_map(Xi, yi, w, sigma, M=1):
     reg = (2/sigma) * w
     return loss + reg
 
-def logistic_loss_grad_ml(Xi, yi, w, sigma, M=1):
+def logistic_loss_grad_ml(Xi, yi, w, sigma=1, M=1):
     z = yi * w.T.dot(Xi)
     loss = - (1 - sigmoid(z)) * yi * Xi * M
     return loss
