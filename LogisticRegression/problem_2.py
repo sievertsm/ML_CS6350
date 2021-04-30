@@ -25,7 +25,7 @@ for v in variance:
     sigma=np.sqrt(v)
     
     # instantiate and fit model
-    model = LogisticRegression(version='map', sigma=sigma, gamma0=1e-3, d=1e-3, tol=1e-3)
+    model = LogisticRegression(version='map', sigma=sigma, gamma0=1e-3, d=1e-3, tol=1e-6)
     model.fit(X_train, y_train)
     
     # get train predictions and error
@@ -62,7 +62,7 @@ for v in variance:
     sigma=np.sqrt(v)
     
     # instantiate and fit model
-    model = LogisticRegression(version='ml', sigma=sigma, gamma0=1e-3, d=1e-3, tol=1e-3)
+    model = LogisticRegression(version='ml', sigma=sigma, gamma0=1e-3, d=1e-3, tol=1e-6)
     model.fit(X_train, y_train)
     
     # get train predictions and error
