@@ -69,7 +69,7 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
-def weight_initialization(input_dim, hidden_dim=[5, 5], output_dim=1):
+def weight_initialization(input_dim, hidden_dim=[5, 5], output_dim=1, zeros=False):
     
     layer_dim = [input_dim] + hidden_dim + [output_dim]
     layer_dim = np.array(layer_dim)
@@ -82,7 +82,11 @@ def weight_initialization(input_dim, hidden_dim=[5, 5], output_dim=1):
 
     weights={}
     for i, [a, b] in enumerate(dims):
-        w = np.random.randn(a, b)
+        
+        if zeros:
+            w = np.zeros((a, b))
+        else:
+            w = np.random.randn(a, b)
         weights[i]=w
         
     return weights
@@ -202,11 +206,11 @@ def update_weights(W, grad, gamma=1e-2):
 # ann class ----------------------------------------------------------------------------
 class ArtificialNeuralNet(object):
     
-    def __init__(self, input_dim, hidden_dim=[5, 5], output_dim=1, gamma0=1e-2, d=1e-2):
+    def __init__(self, input_dim, hidden_dim=[5, 5], output_dim=1, gamma0=1e-2, d=1e-2, zero_weights=False):
         
         self.gamma0 = gamma0
         self.d = d
-        self.W = weight_initialization(input_dim, hidden_dim=hidden_dim, output_dim=output_dim)
+        self.W = weight_initialization(input_dim, hidden_dim=hidden_dim, output_dim=output_dim, zeros=zero_weights)
         
     def fit(self, X, y, T=100):
         
