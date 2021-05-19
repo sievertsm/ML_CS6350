@@ -1,16 +1,16 @@
-# ML_CS6350
+# Machine Learning
 
-This is a machine learning library developed by Michael Sieverts for CS6350 at the University of Utah
+This is a light-weight machine learning library developed by Michael Sieverts for a machine learning course (CS6350) at the University of Utah.
 
-At the top level there are folders for implementations of different machine learning algorithms. Each folder contains a run.sh file to run examples. 
+At the top level there are folders for implementations of different machine learning algorithms. Each folder contains a run.sh file to run examples. Various datasets are stored in the "data" folder as well as a function to read in the data. 
 
 ## Decision Tree
 
-The DecisionTree class can be imported from decision_tree.py. This class allows the user to adjust the maximum depth of the tree, and select a function that computes the heuristics to create the tree. The heuristics available include entropy, majority error, and gini index.
+The DecisionTree class can be imported from decision_tree.py. This class allows the user to adjust the maximum depth of the tree, and select a function that computes the heuristics to create the tree. The heuristics available include entropy, majority error, and gini index. These heuristics are used to determine the best attribute to partition the data on. Decision trees are powerful models that can learn complex non-linear classifications. Below is a graph illustrating how accuracy varies with depth and heuristic functions on the bank dataset. 
 
-![](plots/decisionTree_car_accuracy.png)
+![decision tree accuracy bank](plots/decisionTree_bank_accuracy.png)
 
-![](plots/decisionTree_bank_accuracy.png)
+In this example the training accuracy continually increases as depth increases, but the test accuracy begins decreasing after a depth of 3, and continues to decrease with more depth. The reduction in generalized accuracy is due to overfitting. Overfitting is a concern with decision trees because given enough attributes and no depth restriction the algorithm can learn to perfectly fit the training data. By learning this high amount of variance the model's generalization performance can suffer.
 
 ## Ensemble Learning
 
