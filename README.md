@@ -8,6 +8,10 @@ At the top level there are folders for implementations of different machine lear
 
 The DecisionTree class can be imported from decision_tree.py. This class allows the user to adjust the maximum depth of the tree, and select a function that computes the heuristics to create the tree. The heuristics available include entropy, majority error, and gini index.
 
+![](plots/decisionTree_car_accuracy.png)
+
+![](plots/decisionTree_bank_accuracy.png)
+
 ## Ensemble Learning
 
 The ensemble learning folder contains implementations of Adaboost, Bagging, and Random Forest. All of these classes can be imported from ensemble_learning.py
@@ -16,21 +20,31 @@ The ensemble learning folder contains implementations of Adaboost, Bagging, and 
 
 The Adaboost class allows for the selection of a function that computes the heuristics to create the trees. 
 
+![](plots/ensemble_Adaboost_error.png)
+
 ### Bagging
 
 The Bagging class allows the user to specify how many trees to create. When the model is fit it allows the user to specify how many samples to be included in the bootstrap sampling.
 
+![](plots/ensemble_Bagging_error.png)
+
 ### Random Forest
 
-The Random Forest class allows the user to specify the number of trees to create, and the subset size that is used to select features to split on during tree creation. 
+The Random Forest class allows the user to specify the number of trees to create, and the subset size that is used to select features to split on during tree creation.
+
+![](plots/ensemble_RandomForest_error.png)
 
 ## Linear Model
 
-The LinearRegression class can be imported from linear_regression.py. This class allows the user to select whether to use batch or stochastic gradient descent while fitting to the trainig data. 
+The LinearRegression class can be imported from linear_regression.py. This class allows the user to select whether to use batch or stochastic gradient descent while fitting to the trainig data.
+
+![](plots/linearRegression_error.png)
 
 ## Perceptron
 
 The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. 
+
+<img src=plots/perceptron_weight.png  alt="perceptron weight" width="650">
 
 ## Support Vector Machine
 
