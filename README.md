@@ -14,25 +14,21 @@ In this example the training accuracy continually increases as depth increases, 
 
 ## Ensemble Learning
 
-The ensemble learning folder contains implementations of Adaboost, Bagging, and Random Forest. All of these classes can be imported from ensemble_learning.py
+The ensemble learning folder contains implementations of Adaboost, Bagging, and Random Forest. All of these classes can be imported from ensemble_learning.py. These models combine many weak decision tree learners to create a more robust model that is less prone to overfitting. Even as the iteration increases and the models further fit the training data the test error holds nearly constant instead of increasing. Below is a graph of training and test error for Adaboost to illustrate that point. 
+
+![](plots/ensemble_Adaboost_error.png)
 
 ### Adaboost
 
 The Adaboost class allows for the selection of a function that computes the heuristics to create the trees. 
 
-![](plots/ensemble_Adaboost_error.png)
-
 ### Bagging
 
 The Bagging class allows the user to specify how many trees to create. When the model is fit it allows the user to specify how many samples to be included in the bootstrap sampling.
 
-![](plots/ensemble_Bagging_error.png)
-
 ### Random Forest
 
 The Random Forest class allows the user to specify the number of trees to create, and the subset size that is used to select features to split on during tree creation.
-
-![](plots/ensemble_RandomForest_error.png)
 
 ## Linear Model
 
