@@ -7,8 +7,9 @@ At the top level there are folders for implementations of different machine lear
 ```python
 python examples.py -model decisiontree -value accuracy
 ```
+-model: the model name as listed below
 
-Various datasets are stored in the "data" folder as well as a function to read in the data. 
+-value: the metric used either "accuracy" or "error"
 
 ## Decision Tree
 
