@@ -2,7 +2,7 @@
 
 This is a light-weight machine learning library developed by Michael Sieverts for a machine learning course (CS6350) at the University of Utah.
 
-At the top level there are folders for implementations of different machine learning algorithms. Each folder contains a run.sh file to run the code necesarry for the class problems. For more abbreviated examples of the models the command line interface may be used following this format:
+At the top level there are folders for implementations of different machine learning algorithms. Abbreviated examples of the models can be called using the command line interface following this format:
 
 ```python
 python examples.py -model decisiontree -value accuracy
