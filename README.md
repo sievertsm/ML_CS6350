@@ -66,7 +66,7 @@ The LinearRegression class can be imported from linear_regression.py. This class
 python examples.py -m perceptron
 ```
 
-The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. Perceptron is a mistake driven algorithm meaning it updates whenever it misclassified an example. Below is an illustration of voted perceptron. The heatmap shows how the weights change with each epoch, and the line plot shows how many votes each weight combination recieves. 
+The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. Perceptron is a mistake driven algorithm meaning it updates whenever it misclassified an example. Below is an illustration of voted perceptron. The heatmap shows how the weights change with each epoch, and the line plot shows how many votes each weight combination recieves when it makes the final prediction. 
 
 <img src=plots/perceptron_weight.png  alt="perceptron weight" width="650">
 
@@ -76,7 +76,7 @@ The Perceptron class can be imported from perceptron.py. This class allows the u
 python examples.py -m svm
 ```
 
-The support vector machine classes can be imported from svm.py. There are two classes available to import SVM in the primal and dual domains. SVM in the primal domain utilizes stochastic gradient descent to minimize the SVM loss. The dual form uses scipy to minimize the loss for the optimal solution. In the dual form both a linear and Gaussian kernel are available. Support vector machine learns a hyperplane that seperates the data while attempting to maximize the planes margin. 
+The support vector machine classes can be imported from svm.py. There are two classes available which import SVM in the primal and dual domains. SVM in the primal domain utilizes stochastic gradient descent to minimize the SVM loss. The dual form uses scipy to minimize the loss for the optimal solution. In the dual form both a linear and Gaussian kernel are available. Support vector machine learns a hyperplane that seperates the data while attempting to maximize the planes margin. Below is a comparison of weights learned by SVM in the primal and dual domain with various regularization values C.
 
 ![](plots/svm_weight.png)
 
@@ -86,7 +86,7 @@ The support vector machine classes can be imported from svm.py. There are two cl
 python examples.py -m logisticregression
 ```
 
-The LogisticRegression class can be imported from logistic_regression.py. Either maximum likelihood (ML) or maximum a posteriori (MAP) can be selected as the objective function. Logistic regression is a probabalistic method that predicts a probability that an example belongs to a certain class. 
+The LogisticRegression class can be imported from logistic_regression.py. Either maximum likelihood (ML) or maximum a posteriori (MAP) can be selected as the objective function. Logistic regression is a probabalistic method that predicts a probability that an example belongs to a certain class. Below is an example of the training loss using MAP as the objective function with various values of variance for the prior.
 
 ![](plots/logisticRegression_loss.png)
 
@@ -96,7 +96,7 @@ The LogisticRegression class can be imported from logistic_regression.py. Either
 python examples.py -m ann
 ```
 
-The ArtificialNeuralNet class can be imported from ann.py. This class implements a fully-connected neural network with an arbitrary depth and width.
+The ArtificialNeuralNet class can be imported from ann.py. This class implements a fully-connected neural network with an arbitrary depth and width. Below is a plot of training loss of a network with 2 hidden layers of size 10. 
 
 ![](plots/nn_loss.png)
 
