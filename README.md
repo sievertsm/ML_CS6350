@@ -16,7 +16,7 @@ In this example the training accuracy continually increases as depth increases, 
 
 The ensemble learning folder contains implementations of Adaboost, Bagging, and Random Forest. All of these classes can be imported from ensemble_learning.py. These models combine many weak decision tree learners to create a more robust model that is less prone to overfitting. Even as the iteration increases and the models further fit the training data the test error holds nearly constant instead of increasing. Below is a graph of training and test error for Adaboost to illustrate that point. 
 
-![](plots/ensemble_Adaboost_error.png)
+![](plots/ensemble_Adaboost_error_grid.png)
 
 ### Adaboost
 
@@ -52,6 +52,10 @@ The support vector machine classes can be imported from svm.py. There are two cl
 
 The LogisticRegression class can be imported from logistic_regression.py. Either maximum likelihood (ML) or maximum a posteriori (MAP) can be selected as the objective function. Logistic regression is a probabalistic method that predicts a probability that an example belongs to a certain class. 
 
+![](plots/logisticRegression_loss.png)
+
 ## Neural Network
 
-The ArtificialNeuralNet class can be imported from ann.py. This class implements a fully-connected neural network with an arbitrary depth and width. 
+The ArtificialNeuralNet class can be imported from ann.py. This class implements a fully-connected neural network with an arbitrary depth and width.
+
+![](plots/nn_loss.png)
