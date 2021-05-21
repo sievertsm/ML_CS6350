@@ -18,7 +18,7 @@ The DecisionTree class can be imported from decision_tree.py. This class allows 
 
 In this example the training accuracy continually increases as depth increases, but the test accuracy begins decreasing after a depth of 3, and continues to decrease with more depth. The reduction in generalized accuracy is due to overfitting. Overfitting is a concern with decision trees because given enough attributes and no depth restriction the algorithm can learn to perfectly fit the training data. By learning this high amount of variance the model's generalization performance can suffer.
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m decisiontree
 ```
@@ -33,7 +33,7 @@ The ensemble learning folder contains implementations of Adaboost, Bagging, and 
 
 The Adaboost class allows for the selection of a function that computes the heuristics to create the trees.
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m adaboost
 ```
@@ -42,7 +42,7 @@ python examples.py -m adaboost
 
 The Bagging class allows the user to specify how many trees to create. When the model is fit it allows the user to specify how many samples to be included in the bootstrap sampling. 
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m bagging
 ```
@@ -51,7 +51,7 @@ python examples.py -m bagging
 
 The Random Forest class allows the user to specify the number of trees to create, and the subset size that is used to select features to split on during tree creation.
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m randomforest
 ```
@@ -62,7 +62,7 @@ The LinearRegression class can be imported from linear_regression.py. This class
 
 ![](plots/linearRegression_error.png)
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m linearregression
 ```
@@ -73,7 +73,7 @@ The Perceptron class can be imported from perceptron.py. This class allows the u
 
 <img src=plots/perceptron_weight.png  alt="perceptron weight" width="650">
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m perceptron
 ```
@@ -84,7 +84,7 @@ The support vector machine classes can be imported from svm.py. There are two cl
 
 ![](plots/svm_weight.png)
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m svm
 ```
@@ -95,7 +95,7 @@ The LogisticRegression class can be imported from logistic_regression.py. Either
 
 ![](plots/logisticRegression_loss.png)
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m logisticregression
 ```
@@ -106,7 +106,7 @@ The ArtificialNeuralNet class can be imported from ann.py. This class implements
 
 ![](plots/nn_loss.png)
 
-An example can be run by calling:
+Example:
 ```
 python examples.py -m ann
 ```
