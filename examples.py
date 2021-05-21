@@ -70,11 +70,11 @@ def run_example():
                                                               'logisticregression', 
                                                               'ann'], required=True)
 
-    my_parser.add_argument('-metric', action='store', default='accuracy', choices=['accuracy', 'error'])
+    my_parser.add_argument('-value', action='store', default='accuracy', choices=['accuracy', 'error'])
 
     args = my_parser.parse_args()
 
-    metric = args.metric
+    metric = args.value
     model_select = args.model
 
     model_dict = {'decisiontree': DecisionTree(), 
