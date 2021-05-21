@@ -20,11 +20,11 @@ The ensemble learning folder contains implementations of Adaboost, Bagging, and 
 
 ### Adaboost
 
-The Adaboost class allows for the selection of a function that computes the heuristics to create the trees. 
+The Adaboost class allows for the selection of a function that computes the heuristics to create the trees.
 
 ### Bagging
 
-The Bagging class allows the user to specify how many trees to create. When the model is fit it allows the user to specify how many samples to be included in the bootstrap sampling.
+The Bagging class allows the user to specify how many trees to create. When the model is fit it allows the user to specify how many samples to be included in the bootstrap sampling. 
 
 ### Random Forest
 
@@ -32,23 +32,23 @@ The Random Forest class allows the user to specify the number of trees to create
 
 ## Linear Model
 
-The LinearRegression class can be imported from linear_regression.py. This class allows the user to select whether to use batch or stochastic gradient descent while fitting to the trainig data.
+The LinearRegression class can be imported from linear_regression.py. This class allows the user to select whether to use batch or stochastic gradient descent while fitting to the trainig data. In this implementation of linear regression uses least mean squares to fit the data. Below is a graph illustrating the error with respect to the update. The batch gradient descent shows a quick smooth reduction in error, while the stochastic gradient descent has a more gradual noisy descent until it converges. 
 
 ![](plots/linearRegression_error.png)
 
 ## Perceptron
 
-The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. 
+The Perceptron class can be imported from perceptron.py. This class allows the user to select which variant of perceptron to use. Available implementations include standard, voted, and averaged. Perceptron is a mistake driven algorithm meaning it updates whenever it misclassified an example. Below is an illustration of voted perceptron. The heatmap shows how the weights change with each epoch, and the line plot shows how many votes each weight combination recieves. 
 
 <img src=plots/perceptron_weight.png  alt="perceptron weight" width="650">
 
 ## Support Vector Machine
 
-The support vector machine classes can be imported from svm.py. There are two classes available to import SVM in the primal and dual domains. SVM in the primal domain utilizes stochastic gradient descent to minimize the SVM loss. The dual form uses scipy to minimize the loss for the optimal solution. In the dual form both a linear and Gaussian kernel are available.
+The support vector machine classes can be imported from svm.py. There are two classes available to import SVM in the primal and dual domains. SVM in the primal domain utilizes stochastic gradient descent to minimize the SVM loss. The dual form uses scipy to minimize the loss for the optimal solution. In the dual form both a linear and Gaussian kernel are available. Support vector machine learns a hyperplane that seperates the data while attempting to maximize the planes margin. 
 
 ## Logistic Regression
 
-The LogisticRegression class can be imported from logistic_regression.py. Either maximum likelihood (ML) or maximum a posteriori (MAP) can be selected as the objective function. 
+The LogisticRegression class can be imported from logistic_regression.py. Either maximum likelihood (ML) or maximum a posteriori (MAP) can be selected as the objective function. Logistic regression is a probabalistic method that predicts a probability that an example belongs to a certain class. 
 
 ## Neural Network
 
