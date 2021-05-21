@@ -1,7 +1,0 @@
-#!/bin/sh
-
-printf "\nRunning Problem 3 Artificial Neural Network\n"
-python problem_3.py
-
-printf "\nRunning Problem 3e Pytorch\n"
-python problem_3e_2.py
