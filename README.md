@@ -1,6 +1,6 @@
 # Machine Learning
 
-This is a light-weight machine learning library developed by Michael Sieverts for a machine learning course ([CS6350]("http://www.cs.utah.edu/~zhe/teach/cs6350.html")) at the University of Utah.
+This is a light-weight machine learning library developed by Michael Sieverts for a machine learning course ([CS6350](http://www.cs.utah.edu/~zhe/teach/cs6350.html)) at the University of Utah.
 
 At the top level there are folders for implementations of different machine learning algorithms. Abbreviated examples of the models can be called using the command line interface following this format:
 
